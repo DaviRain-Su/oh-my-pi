@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Allowed `compat.streamIdleTimeoutMs: 0` in `models.yml` so per-model stream idle watchdog disables match the documented option ([#2422](https://github.com/can1357/oh-my-pi/issues/2422)).
+
 ## [15.12.3] - 2026-06-12
 
 ### Fixed

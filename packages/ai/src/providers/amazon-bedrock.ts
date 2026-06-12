@@ -32,6 +32,7 @@ import { normalizeToolCallId, resolveCacheRetention } from "../utils";
 import { AssistantMessageEventStream } from "../utils/event-stream";
 import { appendRawHttpRequestDumpFor400, type RawHttpRequestDump } from "../utils/http-inspector";
 import { parseStreamingJson, parseStreamingJsonThrottled } from "../utils/json-parse";
+import { disableNativeFetchTimeout } from "../utils/native-fetch-timeout";
 import { toolWireSchema } from "../utils/schema/wire";
 import { invalidateAwsCredentialCache, resolveAwsCredentials } from "./aws-credentials";
 import { decodeEventStream } from "./aws-eventstream";
@@ -287,7 +288,7 @@ export const streamBedrock: StreamFunction<"bedrock-converse-stream"> = (
 				headers: requestHeaders,
 				body,
 				signal: options.signal,
-				fetch: options.fetch,
+				fetch: disableNativeFetchTimeout(options.fetch ?? fetch),
 			});
 
 			if (!response.ok) {

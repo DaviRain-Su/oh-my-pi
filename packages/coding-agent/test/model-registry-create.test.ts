@@ -69,4 +69,30 @@ describe("ModelRegistry.create() factory (F6)", () => {
 		const mtime2 = fs.statSync(yml).mtimeMs;
 		expect(mtime2).toBe(mtime1);
 	});
+
+	test("accepts per-model stream watchdog disable in compat config", () => {
+		const result = ModelsConfigSchema.parse({
+			providers: {
+				local: {
+					baseUrl: "http://127.0.0.1:8000/v1",
+					apiKey: "TEST_KEY",
+					api: "openai-completions",
+					models: [
+						{
+							id: "deepseek-v4-flash",
+							name: "DeepSeek V4 Flash",
+							reasoning: true,
+							input: ["text"],
+							cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+							contextWindow: 1048576,
+							maxTokens: 8192,
+							compat: { streamIdleTimeoutMs: 0 },
+						},
+					],
+				},
+			},
+		});
+
+		expect(result.providers?.local?.models?.[0]?.compat?.streamIdleTimeoutMs).toBe(0);
+	});
 });

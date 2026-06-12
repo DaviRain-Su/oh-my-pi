@@ -2,9 +2,21 @@ import { describe, expect, it } from "bun:test";
 import { streamOpenAICompletions } from "@oh-my-pi/pi-ai/providers/openai-completions";
 import { streamOpenAIResponses } from "@oh-my-pi/pi-ai/providers/openai-responses";
 import type { Context, FetchImpl, Model } from "@oh-my-pi/pi-ai/types";
+import { disableNativeFetchTimeout } from "@oh-my-pi/pi-ai/utils/native-fetch-timeout";
 import { getBundledModel } from "@oh-my-pi/pi-catalog/models";
 
 const openAIResponsesModel = getBundledModel("openai", "gpt-5-mini") as Model<"openai-responses">;
+type NativeFetchTimeout = false | number;
+
+interface NativeTimeoutRequestInit extends RequestInit {
+	timeout?: NativeFetchTimeout;
+}
+
+function getNativeFetchTimeout(init: RequestInit | undefined): NativeFetchTimeout | undefined {
+	const nativeInit: NativeTimeoutRequestInit | undefined = init;
+	return nativeInit?.timeout;
+}
+
 const openAICompletionsModel = {
 	...(getBundledModel("openai", "gpt-4o-mini") as Model<"openai-completions">),
 	api: "openai-completions",
@@ -24,13 +36,36 @@ function createSseResponse(events: unknown[]): Response {
 	});
 }
 
+describe("disableNativeFetchTimeout", () => {
+	it("passes timeout false while preserving Bun preconnect", async () => {
+		const calls: Array<{ timeout: NativeFetchTimeout | undefined }> = [];
+		const baseFetch: FetchImpl = Object.assign(
+			async (_input: string | URL | Request, init?: RequestInit) => {
+				calls.push({ timeout: getNativeFetchTimeout(init) });
+				return new Response("ok");
+			},
+			{ preconnect: fetch.preconnect },
+		);
+		const wrappedFetch = disableNativeFetchTimeout(baseFetch);
+
+		const response = await wrappedFetch("https://example.com", { method: "POST" });
+
+		expect(await response.text()).toBe("ok");
+		expect(calls).toEqual([{ timeout: false }]);
+		expect(wrappedFetch.preconnect).toBe(fetch.preconnect);
+	});
+});
+
 describe("StreamOptions.fetch override", () => {
 	it("routes openai-completions requests through the override", async () => {
-		const calls: Array<{ url: string }> = [];
+		const calls: Array<{ url: string; timeout: NativeFetchTimeout | undefined }> = [];
 
 		const customFetch: FetchImpl = Object.assign(
-			async (input: string | URL | Request, _init?: RequestInit) => {
-				calls.push({ url: String(input instanceof Request ? input.url : input) });
+			async (input: string | URL | Request, init?: RequestInit) => {
+				calls.push({
+					url: String(input instanceof Request ? input.url : input),
+					timeout: getNativeFetchTimeout(init),
+				});
 				return createSseResponse([
 					{
 						id: "chatcmpl-test",
@@ -60,15 +95,18 @@ describe("StreamOptions.fetch override", () => {
 
 		expect(result.stopReason).toBe("stop");
 		expect(calls.length).toBeGreaterThanOrEqual(1);
-		expect(calls[0]?.url).toContain("/chat/completions");
+		expect(calls[0]).toMatchObject({ timeout: false, url: expect.stringContaining("/chat/completions") });
 	});
 
 	it("routes openai-responses requests through the override", async () => {
-		const calls: Array<{ url: string }> = [];
+		const calls: Array<{ url: string; timeout: NativeFetchTimeout | undefined }> = [];
 
 		const customFetch: FetchImpl = Object.assign(
-			async (input: string | URL | Request, _init?: RequestInit) => {
-				calls.push({ url: String(input instanceof Request ? input.url : input) });
+			async (input: string | URL | Request, init?: RequestInit) => {
+				calls.push({
+					url: String(input instanceof Request ? input.url : input),
+					timeout: getNativeFetchTimeout(init),
+				});
 				return createSseResponse([
 					{ type: "response.created", response: { id: "resp_test" } },
 					{
@@ -112,6 +150,6 @@ describe("StreamOptions.fetch override", () => {
 
 		expect(result.stopReason).toBe("stop");
 		expect(calls.length).toBeGreaterThanOrEqual(1);
-		expect(calls[0]?.url).toContain("/responses");
+		expect(calls[0]).toMatchObject({ timeout: false, url: expect.stringContaining("/responses") });
 	});
 });

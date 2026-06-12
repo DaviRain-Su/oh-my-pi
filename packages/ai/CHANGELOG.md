@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Disabled Bun's native fetch TTFT timeout for streaming providers so configurable first-event and idle watchdogs remain the effective ceiling on slow-prefill requests ([#2422](https://github.com/can1357/oh-my-pi/issues/2422)).
+
 ## [15.12.1] - 2026-06-12
 
 ### Added

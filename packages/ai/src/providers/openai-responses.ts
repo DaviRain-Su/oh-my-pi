@@ -39,6 +39,7 @@ import {
 	getOpenAIStreamIdleTimeoutMs,
 	iterateWithIdleTimeout,
 } from "../utils/idle-iterator";
+import { disableNativeFetchTimeout } from "../utils/native-fetch-timeout";
 import { notifyProviderResponse } from "../utils/provider-response";
 import { callWithCopilotModelRetry } from "../utils/retry";
 import { adaptSchemaForStrict, NO_STRICT, sanitizeSchemaForOpenAIResponses, toolWireSchema } from "../utils/schema";
@@ -626,7 +627,7 @@ function createClient(
 		headers.session_id ??= sessionId;
 		headers["x-client-request-id"] ??= sessionId;
 	}
-	const baseFetch = fetchOverride ?? fetch;
+	const baseFetch = disableNativeFetchTimeout(fetchOverride ?? fetch);
 	return {
 		client: new OpenAI({
 			apiKey,

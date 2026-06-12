@@ -60,6 +60,7 @@ import {
 	iterateWithIdleTimeout,
 } from "../utils/idle-iterator";
 import { parseStreamingJson, parseStreamingJsonThrottled } from "../utils/json-parse";
+import { disableNativeFetchTimeout } from "../utils/native-fetch-timeout";
 import { createRequestDebugSession, isRequestDebugEnabled, type RequestDebugResponseLog } from "../utils/request-debug";
 import { adaptSchemaForStrict, NO_STRICT, sanitizeSchemaForOpenAIResponses, toolWireSchema } from "../utils/schema";
 import { notifyRawSseEvent } from "../utils/sse-debug";
@@ -3036,7 +3037,7 @@ async function openCodexSseEventStream(
 		maxAttempts: CODEX_MAX_RETRIES + 1,
 		defaultDelayMs: attempt => CODEX_RETRY_DELAY_MS * (attempt + 1),
 		maxDelayMs: CODEX_RATE_LIMIT_BUDGET_MS,
-		fetch: fetchOverride,
+		fetch: disableNativeFetchTimeout(fetchOverride ?? fetch),
 	});
 	logCodexDebug("codex response", {
 		url: response.url,

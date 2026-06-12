@@ -27,6 +27,7 @@ import type {
 import { normalizeSystemPrompts } from "../utils";
 import { AssistantMessageEventStream } from "../utils/event-stream";
 import { appendRawHttpRequestDumpFor400, type RawHttpRequestDump } from "../utils/http-inspector";
+import { disableNativeFetchTimeout } from "../utils/native-fetch-timeout";
 // Refresh is the sole responsibility of AuthStorage (broker-aware, single-flighted);
 // the stream provider trusts the access token threaded through `options.apiKey`.
 import { normalizeSchemaForCCA } from "../utils/schema";
@@ -374,7 +375,7 @@ export const streamGoogleGeminiCli: StreamFunction<"google-gemini-cli"> = (
 					maxAttempts: MAX_RETRIES + 1,
 					defaultDelayMs: attempt => BASE_DELAY_MS * 2 ** attempt,
 					maxDelayMs: options?.maxRetryDelayMs ?? RATE_LIMIT_BUDGET_MS,
-					fetch: options?.fetch,
+					fetch: disableNativeFetchTimeout(options?.fetch ?? fetch),
 				},
 			);
 			if (!response.ok) {

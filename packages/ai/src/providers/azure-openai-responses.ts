@@ -27,6 +27,7 @@ import {
 	getOpenAIStreamIdleTimeoutMs,
 	iterateWithIdleTimeout,
 } from "../utils/idle-iterator";
+import { disableNativeFetchTimeout } from "../utils/native-fetch-timeout";
 import { sanitizeSchemaForOpenAIResponses, toolWireSchema } from "../utils/schema";
 import { createSdkStreamRequestOptions } from "../utils/sdk-stream-timeout";
 import { notifyRawSseEvent } from "../utils/sse-debug";
@@ -287,7 +288,7 @@ function createClient(model: Model<"azure-openai-responses">, apiKey: string, op
 
 	const { baseUrl, apiVersion } = resolveAzureConfig(model, options);
 
-	const baseFetch = options?.fetch ?? fetch;
+	const baseFetch = disableNativeFetchTimeout(options?.fetch ?? fetch);
 	return new AzureOpenAI({
 		apiKey,
 		apiVersion,

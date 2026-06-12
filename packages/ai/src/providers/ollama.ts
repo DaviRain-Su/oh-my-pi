@@ -19,6 +19,7 @@ import { normalizeSystemPrompts } from "../utils";
 import { AssistantMessageEventStream } from "../utils/event-stream";
 import { type CapturedHttpErrorResponse, finalizeErrorMessage, type RawHttpRequestDump } from "../utils/http-inspector";
 import { parseStreamingJson } from "../utils/json-parse";
+import { disableNativeFetchTimeout } from "../utils/native-fetch-timeout";
 import { toolWireSchema } from "../utils/schema/wire";
 import {
 	getStreamMarkupHealingPattern,
@@ -536,7 +537,7 @@ export const streamOllama: StreamFunction<"ollama-chat"> = (
 				body: JSON.stringify(body),
 				signal: options.signal,
 				defaultDelayMs: OLLAMA_RETRY_DELAYS_MS,
-				fetch: options.fetch,
+				fetch: disableNativeFetchTimeout(options.fetch ?? fetch),
 			});
 			if (!response.ok) {
 				capturedErrorResponse = await captureHttpErrorResponse(response);
